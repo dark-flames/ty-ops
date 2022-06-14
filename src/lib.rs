@@ -9,6 +9,7 @@ mod ty;
 mod boolean;
 mod list;
 mod eq;
+mod monad;
 
 pub use nat::*;
 pub use lambda::*;

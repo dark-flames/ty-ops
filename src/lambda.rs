@@ -27,3 +27,21 @@ impl<T: Type> Value for Id<T> {
 impl<T: Type, I: Value<Type=T>> App<I> for Id<T> {
     type Result = I;
 }
+
+pub struct Compose<F: Value, G: Value>(PhantomData<(F, G)>);
+
+impl<A: Type, B: Type, C: Type, F: Value<Type=Lambda<A, B>>, G: Value<Type=Lambda<B, C>>> Value for Compose<F, G> {
+    type Type = Lambda<A, C>;
+}
+
+impl<
+    A: Type, B: Type, C: Type,
+    F: Value<Type=Lambda<A, B>>, G: Value<Type=Lambda<B, C>>,
+    Ia: Value<Type=A>, Ib: Value<Type=B>, Ic: Value<Type=C>
+> App<Ia> for Compose<F, G>
+    where
+        F: App<Ia, Result=Ib>,
+        G: App<Ib, Result=Ic>
+{
+    type Result = Ic;
+}
