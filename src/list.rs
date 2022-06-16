@@ -66,6 +66,36 @@ impl<
     type Result = R;
 }
 
+pub struct  FilterOn<F: Value>(PhantomData<F>);
+
+impl<T: Type, F: Value<Type=Lambda<T, Bool>>> Value for FilterOn<F> {
+    type Type = Lambda<List<T>, List<T>>;
+}
+
+impl<T: Type, F: Value<Type=Lambda<T, Bool>>> App<Empty<T>>for FilterOn<F> {
+    type Result = Empty<T>;
+}
+
+impl<
+    T: Type,
+    F: Value<Type=Lambda<T, Bool>> + App<Current, Result=CurrentResult>,
+    Current: Value<Type=T>,
+    Next: Value<Type=List<T>>,
+    NextResult: Value<Type=List<T>>,
+    CurrentResult: Value<Type=Bool>,
+    CurrentMaybe: Value<Type=Maybe<T>>,
+    Listed: Value<Type=List<T>>,
+    Result: Value<Type=List<T>>,
+> App<Segment<Current, Next>>for FilterOn<F>
+    where
+        FilterOn<F>: App<Next, Result=NextResult>,
+        WhenMaybe<Just<Current>>: App<CurrentResult, Result=CurrentMaybe>,
+        ToList<T>: App<CurrentMaybe, Result=Listed>,
+        ConcatWith<Next>: App<Listed, Result=Result>
+{
+    type Result = Result;
+}
+
 // concat
 pub type Concat<L1, L2> = Eval<ConcatWith<L1>, L2>;
 pub struct ConcatWith<L: Value>(PhantomData<L>);

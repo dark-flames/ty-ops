@@ -13,6 +13,8 @@ pub struct Nat;
 
 impl Type for Nat {}
 
+impl Eq for Nat {}
+
 impl Value for Z {
     type Type = Nat;
 }

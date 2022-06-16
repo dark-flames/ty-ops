@@ -13,6 +13,8 @@ pub struct Bool;
 
 impl Type for Bool {}
 
+impl Eq for Bool {}
+
 impl Value for True {
     type Type = Bool;
 }
@@ -88,6 +90,7 @@ impl<
 
 // or
 pub type Or<A, B> = Eval<OrOn<A>, B>;
+
 pub struct OrOn<T: Value<Type=Bool>>(PhantomData<T>);
 
 impl<T: Value<Type=Bool>> Value for OrOn<T> {
@@ -106,5 +109,34 @@ impl App<False> for OrOn<False> {
     type Result = False;
 }
 
+#[derive(Copy, Clone, Default)]
+pub struct WhenMaybe<V: Value>(PhantomData<V>);
+
+impl<T: Type, V: Value<Type=T>> Value for WhenMaybe<V> {
+    type Type = Lambda<Bool, Maybe<T>>;
+}
+
+impl<T: Type, V: Value<Type=T>> App<True> for WhenMaybe<V> {
+    type Result = Just<V>;
+}
+
+impl<T: Type, V: Value<Type=T>> App<False> for WhenMaybe<V> {
+    type Result = Nothing<T>;
+}
+
+#[derive(Copy, Clone, Default)]
+pub struct WhenMaybeF<V: Value>(PhantomData<V>);
+
+impl<T: Type, V: Value<Type=T>> Value for WhenMaybeF<V> {
+    type Type = Lambda<Bool, Maybe<T>>;
+}
+
+impl<T: Type, V: Value<Type=T>> App<False> for WhenMaybeF<V> {
+    type Result = Just<V>;
+}
+
+impl<T: Type, V: Value<Type=T>> App<True> for WhenMaybeF<V> {
+    type Result = Nothing<T>;
+}
 
 

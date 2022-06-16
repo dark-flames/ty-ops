@@ -20,6 +20,23 @@ impl<T: Type, V: Value<Type=T>> Value for Just<V> {
     type Type = Maybe<T>;
 }
 
+// is nothing
+#[derive(Copy, Clone, Default)]
+pub struct IsNoting<T: Type>(PhantomData<T>);
+
+impl<T: Type> Value for IsNoting<T> {
+    type Type = Lambda<Maybe<T>, Bool>;
+}
+
+impl<T: Type> App<Nothing<T>> for IsNoting<T> {
+    type Result = True;
+}
+
+impl<T: Type, V: Value<Type=T>> App<Just<V>> for IsNoting<T> {
+    type Result = False;
+}
+
+// flatten
 #[derive(Copy, Clone, Default)]
 pub struct Flatten<T: Type>(PhantomData<T>);
 
@@ -34,6 +51,22 @@ impl<T: Type> App<Nothing<Maybe<T>>> for Flatten<T> {
 impl<T: Type, I: Value<Type=Maybe<T>>> App<Just<I>> for Flatten<T> {
     type Result = I;
 }
+
+#[derive(Copy, Clone, Default)]
+pub struct ToList<T: Type>(PhantomData<T>);
+
+impl<T: Type> Value for ToList<T> {
+    type Type = Lambda<Maybe<T>, List<T>>;
+}
+
+impl<T: Type> App<Nothing<T>> for ToList<T> {
+    type Result = Empty<T>;
+}
+
+impl<T: Type, V: Value<Type=T>> App<Just<V>> for ToList<T> {
+    type Result = Return<List<T>, V>;
+}
+
 // monad
 impl<T: Type> Monad for Maybe<T> {
     type Wrapped = T;
