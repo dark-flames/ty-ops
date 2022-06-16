@@ -37,35 +37,6 @@ impl<T: Type, I: Value<Type=T>, L: Value<Type=List<T>>>  App<L> for PushTo<I> {
     type Result = Segment<I, L>;
 }
 
-pub type Map<F, L> = Eval<MapOn<F>, L>;
-#[derive(Clone, Copy, Default)]
-pub struct MapOn<F: Value>(PhantomData<F>);
-
-impl<A: Type, B: Type, F: Value<Type=Lambda<A, B>>> Value for MapOn<F> {
-    type Type = Lambda<List<A>, List<B>>;
-}
-
-impl<A: Type, B: Type, F: Value<Type=Lambda<A, B>>> App<Empty<A>> for MapOn<F> {
-    type Result = Empty<B>;
-}
-
-impl<
-    A: Type, B: Type,
-    F: Value<Type=Lambda<A, B>> + App<Ia, Result=Ib>,
-    Ia: Value<Type=A>,
-    Ib: Value<Type=B>,
-    La: Value<Type=List<A>>,
-    Lb: Value<Type=List<B>>,
-> App<Segment<Ia, La>> for MapOn<F>
-    where
-        MapOn<F>: Value<Type=Lambda<List<A>, List<B>>> + App<La, Result=Lb>
-{
-    type Result = Segment<
-        Ib,
-        Lb
-    >;
-}
-
 // count
 pub type Contains<I, L> = Eval<ContainIn<I>, L>;
 pub struct ContainIn<I: Value>(PhantomData<I>);
@@ -95,6 +66,106 @@ impl<
     type Result = R;
 }
 
+// concat
+pub type Concat<L1, L2> = Eval<ConcatWith<L1>, L2>;
+pub struct ConcatWith<L: Value>(PhantomData<L>);
+
+impl<T: Type, L: Value<Type=List<T>>> Value for ConcatWith<L> {
+    type Type = Lambda<List<T>, List<T>>;
+}
+
+impl<T: Type, L: Value<Type=List<T>>> App<Empty<T>> for ConcatWith<L> {
+    type Result = L;
+}
+
+impl<
+    T: Type,
+    L: Value<Type=List<T>>,
+    I: Value<Type=T>,
+> App<Segment<I, Empty<T>>> for ConcatWith<L> {
+    type Result = Segment<I, L>;
+}
+
+impl<
+    T: Type,
+    L: Value<Type=List<T>>,
+    I: Value<Type=T>,
+    NextI: Value<Type=T>,
+    Next: Value<Type=List<T>>,
+    NextResult: Value<Type=List<T>>,
+> App<Segment<I, Segment<NextI, Next>>> for ConcatWith<L>
+    where
+        ConcatWith<L>: App<Segment<NextI, Next>, Result=NextResult>
+{
+    type Result = Segment<I, NextResult>;
+}
+
+// Functor
+impl<T: Type> Functor<T> for List<T> {
+    type HKT<A: Type> = List<A>;
+}
+
+impl<
+    A: Type,
+    B: Type,
+    F: Value<Type=Lambda<A, B>>
+> App<Empty<A>> for MapOn<List<A>, F> {
+    type Result = Empty<B>;
+}
+
+impl<
+    A: Type, B: Type,
+    F: Value<Type=Lambda<A, B>> + App<Ia, Result=Ib>,
+    Ia: Value<Type=A>,
+    Ib: Value<Type=B>,
+    La: Value<Type=List<A>>,
+    Lb: Value<Type=List<B>>,
+> App<Segment<Ia, La>> for MapOn<List<A>, F>
+    where
+        MapOn<List<A>, F>: Value<Type=Lambda<List<A>, List<B>>> + App<La, Result=Lb>
+{
+    type Result = Segment<
+        Ib,
+        Lb
+    >;
+}
+
+// Monad
+
+impl<T: Type> Monad for List<T> {
+    type Wrapped = T;
+    type HKT<A: Type> = List<A>;
+}
+
+impl<T: Type, V: Value<Type=T>> App<V> for Pure<List<T>> {
+    type Result = Segment<V, Empty<T>>;
+}
+
+
+impl<
+    A: Type, B: Type,
+    F: Value<Type=Lambda<A, List<B>>>
+> App<Empty<A>> for BindOn<List<A>, F>{
+    type Result = Empty<B>;
+}
+
+impl<
+    A: Type, B: Type,
+    F: Value<Type=Lambda<A, List<B>>> + App<Current, Result=CurrentResult>,
+    Current: Value<Type=A>,
+    Next: Value<Type=List<A>>,
+    CurrentResult: Value<Type=List<B>>,
+    NextResult: Value<Type=List<B>>,
+    Result: Value<Type=List<B>>,
+> App<Segment<Current, Next>> for BindOn<List<A>, F>
+    where
+        BindOn<List<A>, F>: Value + App<Next, Result=NextResult>,
+        ConcatWith<NextResult>: Value + App<CurrentResult, Result=Result>
+{
+    type Result = Result;
+}
+
+
 #[test]
 fn test_list() {
     use crate::*;
@@ -107,5 +178,6 @@ fn test_list() {
     assert_ty!(List3<S<Z>, S<S<Z>>, S<S<S<Z>>>>, Mapped);
     assert_ty!(Contains<S<S<S<Z>>>, Mapped>, True);
     assert_ty!(Contains<Z, Mapped>, False);
+    assert_ty!(Bind<L3, Pure<List<Nat>>>, L3);
 }
 

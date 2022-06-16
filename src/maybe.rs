@@ -4,13 +4,13 @@ use crate::*;
 #[derive(Copy, Clone, Default)]
 pub struct Maybe<T: Type>(PhantomData<T>);
 
+impl<T: Type> Type for Maybe<T> {}
+
 #[derive(Copy, Clone, Default)]
 pub struct Nothing<T: Type>(PhantomData<T>);
 
 #[derive(Copy, Clone, Default)]
 pub struct Just<V: Value>(PhantomData<V>);
-
-impl<T: Type> Type for Maybe<T> {}
 
 impl<T: Type> Value for Nothing<T> {
     type Type = Maybe<T>;
@@ -34,18 +34,20 @@ impl<T: Type> App<Nothing<Maybe<T>>> for Flatten<T> {
 impl<T: Type, I: Value<Type=Maybe<T>>> App<Just<I>> for Flatten<T> {
     type Result = I;
 }
-
-#[derive(Copy, Clone, Default)]
-pub struct Bind<A: Type, B: Type>(PhantomData<(A, B)>);
-
-impl<A: Type, B: Type> Value for Bind<A, B> {
-    type Type = Lambda<
-        (Maybe<A>, Lambda<A, Maybe<B>>,),
-        Maybe<B>
-    >;
+// monad
+impl<T: Type> Monad for Maybe<T> {
+    type Wrapped = T;
+    type HKT<A: Type> = Maybe<A>;
 }
 
-impl<A: Type, B: Type, F: Value<Type=Lambda<A, Maybe<B>>>> App<(Nothing<A>, F)> for Bind<A, B> {
+impl<
+    T: Type,
+    V: Value<Type=T>
+> App<V> for Pure<Maybe<T>> {
+    type Result = Just<V>;
+}
+
+impl<A: Type, B: Type, F: Value<Type=Lambda<A, Maybe<B>>>> App<Nothing<A>> for BindOn<Maybe<A>, F> {
     type Result = Nothing<B>;
 }
 
@@ -55,23 +57,27 @@ impl<
     F: Value<Type=Lambda<A, Maybe<B>>> + App<Ia, Result=R>,
     Ia: Value<Type=A>,
     R: Value<Type=Maybe<B>>
-> App<(Just<Ia>, F)> for Bind<A, B> {
+> App<Just<Ia>> for BindOn<Maybe<A>, F> {
     type Result = R;
 }
 
-pub struct Pure<T: Type>(PhantomData<T>);
-
-impl<T: Type> Value for Pure<T> {
-    type Type = Lambda<T, Maybe<T>>;
-}
-
-impl<T: Type, V: Value<Type=T>> App<V> for Pure<T> {
-    type Result = Just<V>;
-}
-
-impl<T: Type> Monad<T> for Maybe<T> {
+// functor
+impl<T: Type> Functor<T> for Maybe<T> {
     type HKT<A: Type> = Maybe<A>;
-    type Pure = Pure<T>;
-    type Bind<B: Type> = Bind<T, B>;
 }
+
+impl<A: Type, B: Type, F: Value<Type=Lambda<A, B>>> App<Nothing<A>> for MapOn<Maybe<A>, F> {
+    type Result = Nothing<B>;
+}
+
+impl<
+    A: Type,
+    B: Type,
+    F: Value<Type=Lambda<A, B>> + App<V, Result=R>,
+    V: Value<Type=A>,
+    R: Value<Type=B>
+> App<Just<V>> for MapOn<Maybe<A>, F> {
+    type Result = Just<R>;
+}
+
 

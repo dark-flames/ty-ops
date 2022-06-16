@@ -22,3 +22,4 @@ pub use eq::*;
 pub use list::*;
 pub use maybe::*;
 pub use monad::*;
+pub use functor::*;
