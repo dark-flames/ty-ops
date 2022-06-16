@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 use crate::*;
+use crate::classes::*;
 
 #[derive(Copy, Clone, Default)]
 pub struct Maybe<T: Type>(PhantomData<T>);

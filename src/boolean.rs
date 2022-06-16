@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 use crate::*;
+use crate::classes::*;
 
 // def
 #[derive(Copy, Clone, Default)]

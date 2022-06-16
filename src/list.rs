@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::*;
+use crate::classes::*;
 
 pub type List1<I> = Segment<I, Empty<<I as Value>::Type>>;
 pub type List2<I1, I2> = Push<I2, List1<I1>>;
