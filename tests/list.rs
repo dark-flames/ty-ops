@@ -1,5 +1,5 @@
-use type_level_stlc::*;
-use type_level_stlc::classes::*;
+use ty_ops::*;
+use ty_ops::classes::*;
 
 #[test]
 fn test_list() {
